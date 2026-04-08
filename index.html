@@ -240,10 +240,23 @@ footer{background:var(--black-mid);border-top:1px solid var(--black-border);padd
   </div>
   <span class="gal-sublabel reveal">— Videos</span>
   <div class="videos-grid reveal">
-    <div class="vid-card paused" onclick="toggleVid(this)"><video preload="metadata" loop playsinline><source src="videos/vid0.mp4" type="video/mp4"></video><div class="vid-badge">Anclado</div><div class="vid-overlay"><div class="vid-btn">&#9654;</div></div></div>
-    <div class="vid-card paused" onclick="toggleVid(this)"><video preload="metadata" loop playsinline><source src="videos/vid1.mp4" type="video/mp4"></video><div class="vid-overlay"><div class="vid-btn">&#9654;</div></div></div>
-    <div class="vid-card paused" onclick="toggleVid(this)"><video preload="metadata" loop playsinline><source src="videos/vid2.mp4" type="video/mp4"></video><div class="vid-overlay"><div class="vid-btn">&#9654;</div></div></div>
-    <div class="vid-card paused" onclick="toggleVid(this)"><video preload="metadata" loop playsinline><source src="videos/vid3.mp4" type="video/mp4"></video><div class="vid-overlay"><div class="vid-btn">&#9654;</div></div></div>
+    <div class="vid-card paused" id="vid-card-0" onclick="toggleVid(this)">
+      <video id="vid-0" preload="metadata" loop playsinline><source src="videos/vid0.mp4" type="video/mp4"></video>
+      <div class="vid-badge">Anclado</div>
+      <div class="vid-overlay"><div class="vid-btn">&#9654;</div></div>
+    </div>
+    <div class="vid-card paused" id="vid-card-1" onclick="toggleVid(this)">
+      <video id="vid-1" preload="metadata" loop playsinline><source src="videos/vid1.mp4" type="video/mp4"></video>
+      <div class="vid-overlay"><div class="vid-btn">&#9654;</div></div>
+    </div>
+    <div class="vid-card paused" id="vid-card-2" onclick="toggleVid(this)">
+      <video id="vid-2" preload="metadata" loop playsinline><source src="videos/vid2.mp4" type="video/mp4"></video>
+      <div class="vid-overlay"><div class="vid-btn">&#9654;</div></div>
+    </div>
+    <div class="vid-card paused" id="vid-card-3" onclick="toggleVid(this)">
+      <video id="vid-3" preload="metadata" loop playsinline><source src="videos/vid3.mp4" type="video/mp4"></video>
+      <div class="vid-overlay"><div class="vid-btn">&#9654;</div></div>
+    </div>
   </div>
   <p class="gal-note" style="margin-top:1.5rem">
     📷 <a href="https://www.instagram.com/chakibarber907/" target="_blank" class="gal-ig">@chakibarber907 Instagram</a>
@@ -391,7 +404,15 @@ window._ref = ref;
 window._get = get;
 window._set = set;
 
-// Load media from Firebase (if admin updated them)
+// Helper para actualizar video
+function updateVideo(id, url) {
+  var v = document.getElementById(id);
+  if (!v) return;
+  v.src = url;
+  v.load();
+}
+
+// Load media from Firebase
 const mediaRef = ref(db, 'media');
 onValue(mediaRef, (snap) => {
   const data = snap.val();
@@ -403,9 +424,13 @@ onValue(mediaRef, (snap) => {
   if (data.gal1) { document.getElementById('gal-1').src = data.gal1; }
   if (data.gal2) { document.getElementById('gal-2').src = data.gal2; }
   if (data.gal3) { document.getElementById('gal-3').src = data.gal3; }
+  // Videos desde Firebase
+  if (data.vid0) { updateVideo('vid-0', data.vid0); }
+  if (data.vid1) { updateVideo('vid-1', data.vid1); }
+  if (data.vid2) { updateVideo('vid-2', data.vid2); }
+  if (data.vid3) { updateVideo('vid-3', data.vid3); }
 });
 
-// Expose DB functions for calendar
 window._loadBookings = async function(dateStr) {
   const snap = await get(ref(db, 'bookings/' + dateStr));
   return snap.val() || {};
@@ -416,11 +441,9 @@ window._saveBooking = async function(dateStr, hour, data) {
 </script>
 
 <script>
-// SCROLL REVEAL
 var obs = new IntersectionObserver(function(e){e.forEach(function(x){if(x.isIntersecting){x.target.classList.add('visible');obs.unobserve(x.target);}});},{threshold:.1});
 document.querySelectorAll('.reveal').forEach(function(el){obs.observe(el);});
 
-// VIDEOS
 function toggleVid(card){
   var v=card.querySelector('video');
   if(v.paused){
@@ -429,7 +452,6 @@ function toggleVid(card){
   } else {v.pause();card.classList.remove('playing');card.classList.add('paused');}
 }
 
-// CALENDARIO
 var WA="34698213370",selDay=null,selHour=null;
 var cM=new Date().getMonth(),cY=new Date().getFullYear();
 var MN=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
@@ -471,14 +493,9 @@ async function pickDay(ds,dt){
   var lbl=dt.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"});
   lbl=lbl.charAt(0).toUpperCase()+lbl.slice(1);
   document.getElementById("sel-date-lbl").textContent=lbl;
-
-  // Load real bookings from Firebase
   var booked={};
-  if(window._loadBookings){
-    try{ booked=await window._loadBookings(ds); }catch(e){}
-  }
+  if(window._loadBookings){try{booked=await window._loadBookings(ds);}catch(e){}}
   loading.style.display="none";
-
   sl.forEach(function(h){
     var key=h.replace(":","");
     var isBusy=booked[key]&&booked[key].confirmed;
@@ -504,7 +521,6 @@ function pickHour(h,btn){
 
 function changeMonth(d){cM+=d;if(cM>11){cM=0;cY++;}if(cM<0){cM=11;cY--;}renderCal();}
 
-// ANIMACION SOBRE
 function playEnvAnim(cb){
   var anim=document.getElementById("send-anim");
   var svg=document.getElementById("env-svg");
@@ -534,24 +550,17 @@ async function sendReserva(){
   var sv=document.getElementById("f-service").value;
   var nt=document.getElementById("f-note").value.trim();
   if(!nm||!ph||!sv||!selDay||!selHour){alert("Rellena todos los campos y elige dia y hora.");return;}
-
   var btn=document.getElementById("btn-reservar");
   btn.disabled=true;btn.textContent="Guardando...";
-
-  // Save to Firebase
   if(window._saveBooking){
-    try{
-      await window._saveBooking(selDay,selHour,{nombre:nm,telefono:ph,servicio:sv,nota:nt,timestamp:Date.now(),confirmed:true});
-    }catch(e){console.log("Firebase error:",e);}
+    try{await window._saveBooking(selDay,selHour,{nombre:nm,telefono:ph,servicio:sv,nota:nt,timestamp:Date.now(),confirmed:true});}
+    catch(e){console.log("Firebase error:",e);}
   }
-
   btn.disabled=false;btn.textContent="Confirmar Horario ✂";
-
   var dt=new Date(selDay+"T12:00:00");
   var dl=dt.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
   dl=dl.charAt(0).toUpperCase()+dl.slice(1);
   var msg="NUEVA RESERVA CHAKI BARBER\n\nNombre: "+nm+"\nTelefono: "+ph+"\nServicio: "+sv+"\nDia: "+dl+"\nHora: "+selHour+(nt?"\nNota: "+nt:"");
-
   playEnvAnim(function(){
     window.open("https://wa.me/"+WA+"?text="+encodeURIComponent(msg),"_blank");
     document.getElementById("f-name").value="";
